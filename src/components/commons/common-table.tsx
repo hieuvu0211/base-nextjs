@@ -156,6 +156,9 @@ export const CommonTable = <T extends TableRow>({
     getCoreRowModel: getCoreRowModel(),
     enableRowSelection,
     onRowSelectionChange: onRowSelection || setRowSelection,
+    state: {
+      rowSelection,
+    },
     getPaginationRowModel: getPaginationRowModel(),
     manualPagination: manualPagination,
     pageCount: totalPage,
