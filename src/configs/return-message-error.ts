@@ -1,36 +1,36 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 //just for register contest - (axios - strapi)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const HandleReturnMessgaeErrorAxios = (error: any) => {
-  if (error.response) {
-    const { data } = error.response
-    if (data.error.message == 'Username') {
+export const HandleReturnMessgaeErrorAxios = (error: unknown) => {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const axiosError = error as { response?: { data?: { error?: { message?: string } } } }
+    const { data } = axiosError.response || {}
+    if (data?.error?.message == 'Username') {
       return 'username'
     }
-    if (data.error.message == 'Email') {
+    if (data?.error?.message == 'Email') {
       return 'email'
     }
-    if (data.error.message == 'unknown') {
+    if (data?.error?.message == 'unknown') {
       return 'unknown'
     }
     return 'Account is already taken'
-  } else if (error.request) {
+  } else if ((error as any)?.request) {
     return 'Cannot connect to server'
   } else {
     return 'Unknown error'
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const HandleReturnMessgaeErrorLogin = (error: any) => {
-  if (error.response) {
-    const { data } = error.response
-    if (!!data.error.message) {
+export const HandleReturnMessgaeErrorLogin = (error: unknown) => {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const axiosError = error as { response?: { data?: { error?: { message?: string } } } }
+    const { data } = axiosError.response || {}
+    if (data?.error?.message) {
       console.log(data.error.message)
       return data.error.message.toString()
     }
-    return data.error.message.toString()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } else if (error.request) {
+    return data?.error?.message?.toString() || 'Unknown error'
+  } else if ((error as any)?.request) {
     return 'Cannot connect to server'
   } else {
     return 'Unknown error'

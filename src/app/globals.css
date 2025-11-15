@@ -1,4 +1,137 @@
 @import 'tailwindcss';
+@custom-variant dark (&:is(.dark *));
+
+.red {
+  border: 1px solid red;
+}
+
+/* Tailwind v4 Theme Configuration */
+@theme {
+  /* Custom Colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Primary Color Palette (Gold/Yellow theme for crypto) */
+  --color-primary-10: #f3ba2f;
+  --color-primary-20: #cc9c27;
+
+  /* Red */
+  --color-red-10: #de5242;
+  --color-red-20: #c83e2e;
+  --color-red-30: #986021;
+
+  /* Green */
+  --color-green-10: #53b06c;
+  --color-green-20: #419056;
+  --color-green-30: #337247;
+
+  /* Font Family */
+  --font-sans: 'Inter';
+}
+/* Body text */
+.text-BodyXxs {
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 400;
+}
+
+.text-BodyXs {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+}
+
+.text-BodySm {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+}
+
+.text-BodyMd {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+}
+
+.text-BodyLg {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 400;
+}
+
+.text-BodyXl {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 400;
+}
+
+.text-BodyLink {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+}
+
+/* Subhead text */
+.text-SubheadXs {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+
+.text-SubheadSm {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.text-SubheadMd {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+
+.text-SubheadLg {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+
+.text-SubheadXl {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 500;
+}
+
+/* Heading text */
+.text-HeadingXs {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 500;
+}
+
+.text-HeadingSm {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 500;
+}
+
+.text-HeadingMd {
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 500;
+}
+
+.text-HeadingLg {
+  font-size: 40px;
+  line-height: 48px;
+  font-weight: 500;
+}
+
+.text-HeadingXl {
+  font-size: 52px;
+  line-height: 60px;
+  font-weight: 500;
+}
 
 :root {
   --background: #ffffff;
@@ -8,14 +141,16 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --color-card: rgb(3 7 18);
+    --color-card-foreground: rgb(250 250 250);
+    --color-muted: rgb(23 23 23);
+    --color-muted-foreground: rgb(163 163 163);
   }
 }
 
@@ -23,4 +158,27 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  background: #252525;
+  width: 5px;
+  height: 5px;
+}
+
+/* Track */
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #252525;
+  border-radius: 5px;
+}
+
+/* Handle */
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #f3ba2f;
+  border-radius: 5px;
+}
+
+/* Handle on hover */
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #c4901a;
 }
