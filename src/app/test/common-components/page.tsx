@@ -77,6 +77,7 @@ export default function CommonComponentsTest() {
     password: '',
     search: '',
   })
+  const [tablePage, setTablePage] = useState(1)
 
   const handleButtonClick = () => {
     setLoading(true)
@@ -172,12 +173,13 @@ export default function CommonComponentsTest() {
           <CommonTable<User>
             data={sampleData}
             columns={columns}
-            page={1}
+            page={tablePage}
             totalPage={2}
-            totalDocs={8}
+            totalDocs={sampleData.length}
             docsPerPage={5}
             enableRowSelection
             enableIndexColumn
+            onPageChange={(newPage) => setTablePage(newPage)}
             onRowClick={(row) => console.log('Row clicked:', row.original)}
             onRowSelection={(selection) => console.log('Row selection:', selection)}
           />

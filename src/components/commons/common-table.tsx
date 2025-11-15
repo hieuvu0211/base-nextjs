@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   flexRender,
@@ -14,7 +14,6 @@ import {
   RowSelectionState,
 } from '@tanstack/react-table'
 import classNames from 'classnames'
-import { cloneDeep } from 'lodash'
 
 interface TableRow {
   id?: string | number
@@ -30,7 +29,6 @@ interface Props<T extends TableRow> {
   docsPerPage?: number
   selectedRow?: Record<number, boolean>
   onPageChange?: (page: number) => void
-  onPageSizeChange?: (pageSize: number) => void
   onRowClick?: (row: Row<T>) => void
   onRowDoubleClick?: (row: Row<T>) => void
   onRowSelection?: OnChangeFn<RowSelectionState>
@@ -57,7 +55,7 @@ function IndeterminateCheckbox({
   className = '',
   ...rest
 }: IndeterminateCheckboxProps) {
-  const ref = useRef<HTMLInputElement>(null)
+  const ref = React.useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (ref.current && typeof indeterminate === 'boolean') {
@@ -69,7 +67,7 @@ function IndeterminateCheckbox({
     <input
       type="checkbox"
       ref={ref}
-      className={classNames('cursor-pointer', className, rest.checked && '!accent-blue-50')}
+      className={classNames('cursor-pointer', className, rest.checked && '!accent-blue-600')}
       {...rest}
     />
   )
@@ -86,30 +84,30 @@ export const CommonTable = <T extends TableRow>({
   enableRowSelection = false,
   enableIndexColumn = false,
   onPageChange,
-  // onPageSizeChange,
   onRowClick,
-  onRowSelection,
   onRowDoubleClick,
+  onRowSelection,
   disableFooter = false,
-  // disableBorder = false,
-  disableDefaultRowSelection = false,
+  disableBorder = false,
   manualPagination = true,
-  customTableClassname,
+  disableDefaultRowSelection = false,
   onSelect,
+  customTableClassname,
   isLoading = false,
   tabs,
   activeTab,
   onTabChange,
 }: Props<T>) => {
-  const [pagination, setPagination] = useState({
-    pageIndex: page - 1,
-    pageSize: docsPerPage,
-  })
-
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const isEmpty = !data || data.length === 0
-  const startItem = (page - 1) * pagination.pageSize + 1
-  const endItem = Math.min(page * pagination.pageSize, totalDocs || 0)
+
+  // Calculate displayed items based on current page and docsPerPage
+  const startIndex = (page - 1) * docsPerPage
+  const endIndex = startIndex + docsPerPage
+  const paginatedData = manualPagination ? data.slice(startIndex, endIndex) : data
+
+  const startItem = startIndex + 1
+  const endItem = Math.min(endIndex, totalDocs || data.length)
 
   const rowSelectionColumn: ColumnDef<T> = {
     id: 'select',
@@ -140,63 +138,46 @@ export const CommonTable = <T extends TableRow>({
     cell: ({ row }: { row: Row<T> }) => <span>{row.index + 1}</span>,
   }
 
-  const renderedColumns = (): ColumnDef<T>[] => {
-    const clone = cloneDeep(columns)
+  const renderedColumns = useMemo(() => {
+    const cols = [...columns]
     if (enableIndexColumn) {
-      clone.unshift(indexColumn)
+      cols.unshift(indexColumn)
     }
     if (enableRowSelection && !disableDefaultRowSelection) {
-      clone.unshift(rowSelectionColumn)
+      cols.unshift(rowSelectionColumn)
     }
-    return clone
-  }
+    return cols
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columns, enableIndexColumn, enableRowSelection, disableDefaultRowSelection])
 
   const table = useReactTable({
-    data,
-    columns: renderedColumns(),
+    data: paginatedData,
+    columns: renderedColumns,
     getCoreRowModel: getCoreRowModel(),
-    enableRowSelection: enableRowSelection,
+    enableRowSelection,
     onRowSelectionChange: onRowSelection || setRowSelection,
     getPaginationRowModel: getPaginationRowModel(),
-    onPaginationChange: setPagination,
-    state: {
-      rowSelection,
-      pagination,
-    },
     manualPagination: manualPagination,
     pageCount: totalPage,
   })
 
-  const isFirstPage = useMemo(() => {
-    return manualPagination ? page === 1 : !table.getCanPreviousPage()
-  }, [manualPagination, page, table])
-
-  const isLastPage = useMemo(() => {
-    return manualPagination ? page === totalPage : !table.getCanNextPage()
-  }, [manualPagination, page, totalPage, table])
+  const isFirstPage = page === 1
+  const isLastPage = page === totalPage
 
   const handleNextPage = () => {
-    if (!isLastPage) {
-      if (manualPagination && onPageChange) {
-        onPageChange(page + 1)
-      } else {
-        table.nextPage()
-      }
+    if (!isLastPage && onPageChange) {
+      onPageChange(page + 1)
     }
   }
 
   const handlePrevPage = () => {
-    if (!isFirstPage) {
-      if (manualPagination && onPageChange) {
-        onPageChange(page - 1)
-      } else {
-        table.previousPage()
-      }
+    if (!isFirstPage && onPageChange) {
+      onPageChange(page - 1)
     }
   }
 
   const handlePageChange = (newPage: number) => {
-    if (onPageChange) {
+    if (onPageChange && newPage >= 1 && newPage <= totalPage) {
       onPageChange(newPage)
     }
   }
@@ -211,26 +192,6 @@ export const CommonTable = <T extends TableRow>({
   }
 
   useEffect(() => {
-    if (docsPerPage !== pagination.pageSize) {
-      setPagination((prev) => ({
-        ...prev,
-        pageSize: docsPerPage,
-      }))
-    }
-  }, [docsPerPage])
-
-  // const handlePageSizeChange = (newPageSize: number) => {
-  //   setPagination((prev) => ({
-  //     ...prev,
-  //     pageSize: newPageSize,
-  //   }));
-
-  //   if (onPageSizeChange) {
-  //     onPageSizeChange(newPageSize);
-  //   }
-  // };
-
-  useEffect(() => {
     if (selectedRow) {
       setRowSelection(selectedRow)
     }
@@ -239,7 +200,7 @@ export const CommonTable = <T extends TableRow>({
   if (isLoading) {
     return (
       <div className="flex h-[100px] w-full items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-10"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
       </div>
     )
   }
@@ -248,17 +209,18 @@ export const CommonTable = <T extends TableRow>({
     <div className="flex flex-col">
       <div
         className={classNames(
-          'w-full overflow-hidden rounded-lg border border-gray-80 bg-white',
+          'w-full overflow-hidden rounded-lg border bg-white',
+          !disableBorder && 'border-gray-200',
           customTableClassname
         )}
       >
         {tabs && activeTab && onTabChange && (
-          <div className="flex gap-4 p-4 border-b border-gray-80">
+          <div className="flex gap-4 p-4 border-b border-gray-200">
             {tabs.map((tab) => (
               <button
                 key={tab}
                 className={`px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === tab ? 'bg-primary-10 text-gray-90' : 'text-gray-50 hover:bg-gray-80'
+                  activeTab === tab ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
                 }`}
                 onClick={() => onTabChange(tab)}
               >
@@ -269,7 +231,7 @@ export const CommonTable = <T extends TableRow>({
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px]">
+          <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
@@ -293,7 +255,7 @@ export const CommonTable = <T extends TableRow>({
               {isEmpty ? (
                 <tr>
                   <td
-                    colSpan={columns.length}
+                    colSpan={renderedColumns.length}
                     className="text-center py-8 text-gray-500 bg-gray-50"
                   >
                     <div className="flex flex-col items-center">
@@ -338,22 +300,13 @@ export const CommonTable = <T extends TableRow>({
       {!disableFooter && !isEmpty && (
         <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-200 rounded-b-lg">
           <div className="flex items-center gap-2 text-gray-600">
-            {/* <select
-              value={pagination.pageSize}
-              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-              className="bg-gray-90 border border-gray-80 rounded px-2 py-1 text-gray-00"
-            >
-              {[10, 20, 30, 40, 50].map((pageSize) => (
-                <option key={pageSize} value={pageSize}>
-                  {pageSize}
-                </option>
-              ))}
-            </select> */}
             <span>
-              <span className="text-gray-500">
-                Showing {startItem}-{endItem}
+              Showing{' '}
+              <span className="font-medium text-gray-900">
+                {startItem}-{endItem}
               </span>{' '}
-              <span className="text-gray-700 font-medium">of {totalDocs} results</span>
+              of <span className="font-medium text-gray-900">{totalDocs || data.length}</span>{' '}
+              results
             </span>
           </div>
 
@@ -375,8 +328,8 @@ export const CommonTable = <T extends TableRow>({
                     onClick={() => handlePageChange(pageNumber)}
                     className={`w-8 h-8 rounded flex items-center justify-center text-sm font-medium transition-colors ${
                       pageNumber === page
-                        ? 'bg-primary-10 text-white'
-                        : 'text-gray-700 hover:bg-gray-200'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-100'
                     }`}
                   >
                     {pageNumber}
