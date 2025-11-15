@@ -206,20 +206,20 @@ Custom hooks are organized by functionality and reusability:
 
 ```typescript
 // hooks/use-infinite-scroll.ts - Complex logic hook
-export function useInfiniteScroll(
-  fetchMore: () => Promise<void>,
-  hasMore: boolean
-) {
-  const [loading, setLoading] = useState(false);
-  const observer = useRef<IntersectionObserver>();
+export function useInfiniteScroll(fetchMore: () => Promise<void>, hasMore: boolean) {
+  const [loading, setLoading] = useState(false)
+  const observer = useRef<IntersectionObserver>()
 
-  const lastElementRef = useCallback((node: HTMLDivElement) => {
-    if (loading || !hasMore) return;
-    if (observer.current) observer.current.disconnect();
-    // ... intersection observer logic
-  }, [loading, hasMore]);
+  const lastElementRef = useCallback(
+    (node: HTMLDivElement) => {
+      if (loading || !hasMore) return
+      if (observer.current) observer.current.disconnect()
+      // ... intersection observer logic
+    },
+    [loading, hasMore]
+  )
 
-  return { lastElementRef, loading };
+  return { lastElementRef, loading }
 }
 
 // Note: For debounce functionality, use an external library like 'use-debounce'
@@ -230,45 +230,45 @@ export function useInfiniteScroll(
 ```typescript
 // hooks/use-api.ts - API integration hook
 export function useApi<T>() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   const create = useMutation({
     mutationFn: async (data: CreateData<T>) => apiService.create(data),
     onSuccess: (newItem) => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-      showToast.success('Created successfully!');
+      queryClient.invalidateQueries({ queryKey: ['items'] })
+      showToast.success('Created successfully!')
     },
     onError: (error) => {
-      showToast.error(error.message);
-    }
-  });
+      showToast.error(error.message)
+    },
+  })
 
   const update = useMutation({
     mutationFn: async ({ id, data }: UpdateData<T>) => apiService.update(id, data),
     onMutate: async ({ id, data }) => {
-      await queryClient.cancelQueries({ queryKey: ['items'] });
-      const previous = queryClient.getQueryData(['items']);
+      await queryClient.cancelQueries({ queryKey: ['items'] })
+      const previous = queryClient.getQueryData(['items'])
       // Optimistic update logic
-      return { previous };
+      return { previous }
     },
     onError: (err, variables, context) => {
-      queryClient.setQueryData(['items'], context?.previous);
-      showToast.error('Update failed');
+      queryClient.setQueryData(['items'], context?.previous)
+      showToast.error('Update failed')
     },
     onSuccess: () => {
-      showToast.success('Updated successfully!');
-    }
-  });
+      showToast.success('Updated successfully!')
+    },
+  })
 
   const remove = useMutation({
     mutationFn: async (id: string) => apiService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-      showToast.success('Deleted successfully!');
-    }
-  });
+      queryClient.invalidateQueries({ queryKey: ['items'] })
+      showToast.success('Deleted successfully!')
+    },
+  })
 
-  return { create, update, remove };
+  return { create, update, remove }
 }
 ```
 
@@ -432,65 +432,65 @@ export default NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        const validatedFields = LoginSchema.safeParse(credentials);
-        if (!validatedFields.success) return null;
+        const validatedFields = LoginSchema.safeParse(credentials)
+        if (!validatedFields.success) return null
 
-        const { email, password } = validatedFields.data;
-        const user = await authService.login({ email, password });
-        return user;
+        const { email, password } = validatedFields.data
+        const user = await authService.login({ email, password })
+        return user
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.accessToken = user.accessToken;
-        token.role = user.role;
+        token.accessToken = user.accessToken
+        token.role = user.role
       }
-      return token;
+      return token
     },
     async session({ session, token }) {
-      session.user.accessToken = token.accessToken as string;
-      session.user.role = token.role as string;
-      return session;
+      session.user.accessToken = token.accessToken as string
+      session.user.role = token.role as string
+      return session
     },
   },
   pages: {
     signIn: '/login',
     error: '/auth/error',
   },
-});
+})
 ```
 
 ### 2. **Route Protection with Middleware**
 
 ```typescript
 // middleware.ts
-import { withAuth } from 'next-auth/middleware';
-import { NextResponse } from 'next/server';
+import { withAuth } from 'next-auth/middleware'
+import { NextResponse } from 'next/server'
 
 export default withAuth(
   function middleware(req) {
-    const token = req.nextauth.token;
-    const isAdmin = token?.role === 'admin';
-    const isAdminRoute = req.nextUrl.pathname.startsWith('/admin');
+    const token = req.nextauth.token
+    const isAdmin = token?.role === 'admin'
+    const isAdminRoute = req.nextUrl.pathname.startsWith('/admin')
 
     if (isAdminRoute && !isAdmin) {
-      return NextResponse.redirect(new URL('/unauthorized', req.url));
+      return NextResponse.redirect(new URL('/unauthorized', req.url))
     }
 
-    return NextResponse.next();
+    return NextResponse.next()
   },
   {
     callbacks: {
       authorized: ({ token }) => !!token,
     },
   }
-);
+)
 
 export const config = {
   matcher: ['/dashboard/:path*', '/admin/:path*'],
-};
+}
 ```
 
 ### 3. **Input Validation with Zod**
@@ -498,22 +498,27 @@ export const config = {
 ```typescript
 // validations/user.ts
 export const UserSchema = z.object({
-  name: z.string()
+  name: z
+    .string()
     .min(2, 'Name must be at least 2 characters')
     .max(50, 'Name cannot exceed 50 characters')
-    .transform(val => val.trim()),
-  email: z.string()
+    .transform((val) => val.trim()),
+  email: z
+    .string()
     .email('Invalid email address')
-    .transform(val => val.toLowerCase()),
-  password: z.string()
+    .transform((val) => val.toLowerCase()),
+  password: z
+    .string()
     .min(8, 'Password must be at least 8 characters')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-           'Password must contain at least one uppercase, lowercase, and number'),
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      'Password must contain at least one uppercase, lowercase, and number'
+    ),
   role: z.enum(['user', 'admin']).default('user'),
-});
+})
 
 // Type inference from schema
-export type CreateUserInput = z.infer<typeof UserSchema>;
+export type CreateUserInput = z.infer<typeof UserSchema>
 ```
 
 ## 🚀 Performance Optimizations
@@ -566,12 +571,12 @@ const queryClient = new QueryClient({
       cacheTime: 10 * 60 * 1000, // 10 minutes
       refetchOnWindowFocus: false,
       retry: (failureCount, error) => {
-        if (error.status === 404) return false;
-        return failureCount < 3;
+        if (error.status === 404) return false
+        return failureCount < 3
       },
     },
   },
-});
+})
 
 // Next.js caching with fetch
 async function getUsers(): Promise<User[]> {
@@ -580,10 +585,10 @@ async function getUsers(): Promise<User[]> {
       revalidate: 300, // 5 minutes
       tags: ['users'],
     },
-  });
+  })
 
-  if (!res.ok) throw new Error('Failed to fetch users');
-  return res.json();
+  if (!res.ok) throw new Error('Failed to fetch users')
+  return res.json()
 }
 ```
 
@@ -601,13 +606,13 @@ NEXT_PUBLIC_API_BASE_URL=https://api.example.com  # Real API URL
 
 ```typescript
 // mock/users.ts
-import { ApiResponse } from '@/types/api-response';
+import { ApiResponse } from '@/types/api-response'
 
 export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'user' | 'admin';
+  id: string
+  name: string
+  email: string
+  role: 'user' | 'admin'
 }
 
 export const mockUsersResponse: ApiResponse<User[]> = {
@@ -627,46 +632,46 @@ export const mockUsersResponse: ApiResponse<User[]> = {
     pageCount: 1,
     limit: 10,
   },
-};
+}
 ```
 
 ### 3. **Service Layer with Mock Support**
 
 ```typescript
 // services/user-service.ts
-import { ApiResponse } from '@/types/api-response';
-import { mockUsersResponse } from '@/mock/users';
+import { ApiResponse } from '@/types/api-response'
+import { mockUsersResponse } from '@/mock/users'
 
-const isMockMode = process.env.NEXT_PUBLIC_MOCK_MODE === 'true';
+const isMockMode = process.env.NEXT_PUBLIC_MOCK_MODE === 'true'
 
 export class UserService {
   async getUsers(): Promise<ApiResponse<User[]>> {
     if (isMockMode) {
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return mockUsersResponse;
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      return mockUsersResponse
     }
 
     // Real API call
-    const response = await fetch('/api/users');
+    const response = await fetch('/api/users')
     if (!response.ok) {
-      throw new Error('Failed to fetch users');
+      throw new Error('Failed to fetch users')
     }
-    return response.json();
+    return response.json()
   }
 
   async createUser(userData: CreateUserInput): Promise<ApiResponse<User>> {
     if (isMockMode) {
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300))
       // Simulate creating a user
       const newUser: User = {
         id: Date.now().toString(),
         ...userData,
-      };
+      }
       return {
         message: 'User created successfully',
         data: newUser,
-      };
+      }
     }
 
     // Real API call
@@ -674,8 +679,8 @@ export class UserService {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData),
-    });
-    return response.json();
+    })
+    return response.json()
   }
 }
 ```
@@ -796,26 +801,26 @@ export class AppError extends Error {
     public statusCode: number = 500,
     public isRetryable: boolean = false
   ) {
-    super(message);
-    this.name = 'AppError';
+    super(message)
+    this.name = 'AppError'
   }
 }
 
 export const handleError = (error: unknown) => {
   if (error instanceof AppError) {
-    showToast.error(error.message);
+    showToast.error(error.message)
     if (!error.isRetryable) {
       // Log to monitoring service
-      console.error('Non-retryable error:', error);
+      console.error('Non-retryable error:', error)
     }
   } else if (error instanceof Error) {
-    showToast.error('An unexpected error occurred');
-    console.error('Unexpected error:', error);
+    showToast.error('An unexpected error occurred')
+    console.error('Unexpected error:', error)
   } else {
-    showToast.error('Something went wrong');
-    console.error('Unknown error:', error);
+    showToast.error('Something went wrong')
+    console.error('Unknown error:', error)
   }
-};
+}
 ```
 
 ### 2. **Toast Notifications**
@@ -881,33 +886,30 @@ export function PageLoading() {
 
 ```typescript
 // __tests__/hooks/use-debounce.test.ts
-import { renderHook, act } from '@testing-library/react';
-import { useDebounce } from '@/hooks/use-debounce';
+import { renderHook, act } from '@testing-library/react'
+import { useDebounce } from '@/hooks/use-debounce'
 
 describe('useDebounce', () => {
   it('should debounce the value', async () => {
-    const { result, rerender } = renderHook(
-      ({ value, delay }) => useDebounce(value, delay),
-      {
-        initialProps: { value: 'initial', delay: 500 },
-      }
-    );
+    const { result, rerender } = renderHook(({ value, delay }) => useDebounce(value, delay), {
+      initialProps: { value: 'initial', delay: 500 },
+    })
 
-    expect(result.current).toBe('initial');
+    expect(result.current).toBe('initial')
 
     act(() => {
-      rerender({ value: 'updated', delay: 500 });
-    });
+      rerender({ value: 'updated', delay: 500 })
+    })
 
-    expect(result.current).toBe('initial'); // Should not update immediately
+    expect(result.current).toBe('initial') // Should not update immediately
 
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 500));
-    });
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    })
 
-    expect(result.current).toBe('updated');
-  });
-});
+    expect(result.current).toBe('updated')
+  })
+})
 ```
 
 ### 2. **Component Testing**
@@ -943,29 +945,29 @@ describe('Button', () => {
 
 ```typescript
 // tests/e2e/user-management.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test'
 
 test('user management flow', async ({ page }) => {
-  await page.goto('/dashboard/users');
+  await page.goto('/dashboard/users')
 
   // Create user
-  await page.click('[data-testid="create-user-button"]');
-  await page.fill('[data-testid="user-name"]', 'John Doe');
-  await page.fill('[data-testid="user-email"]', 'john@example.com');
-  await page.click('[data-testid="submit-button"]');
+  await page.click('[data-testid="create-user-button"]')
+  await page.fill('[data-testid="user-name"]', 'John Doe')
+  await page.fill('[data-testid="user-email"]', 'john@example.com')
+  await page.click('[data-testid="submit-button"]')
 
   // Verify user is created
-  await expect(page.locator('text=John Doe')).toBeVisible();
-  await expect(page.locator('text=john@example.com')).toBeVisible();
+  await expect(page.locator('text=John Doe')).toBeVisible()
+  await expect(page.locator('text=john@example.com')).toBeVisible()
 
   // Edit user
-  await page.click('[data-testid="edit-user"]:first-child');
-  await page.fill('[data-testid="user-name"]', 'Jane Doe');
-  await page.click('[data-testid="submit-button"]');
+  await page.click('[data-testid="edit-user"]:first-child')
+  await page.fill('[data-testid="user-name"]', 'Jane Doe')
+  await page.click('[data-testid="submit-button"]')
 
   // Verify user is updated
-  await expect(page.locator('text=Jane Doe')).toBeVisible();
-});
+  await expect(page.locator('text=Jane Doe')).toBeVisible()
+})
 ```
 
 This architecture ensures:

@@ -1,13 +1,13 @@
-import { ApiResponse } from '@/types/api-response';
+import { ApiResponse } from '@/types/api-response'
 
 export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'user' | 'admin';
-  avatar?: string;
-  createdAt: string;
-  updatedAt: string;
+  id: string
+  name: string
+  email: string
+  role: 'user' | 'admin'
+  avatar?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export const mockUsers: User[] = [
@@ -38,7 +38,7 @@ export const mockUsers: User[] = [
     createdAt: '2024-01-17T09:15:00Z',
     updatedAt: '2024-01-17T09:15:00Z',
   },
-];
+]
 
 export const mockUsersResponse: ApiResponse<User[]> = {
   message: 'Users retrieved successfully',
@@ -49,4 +49,4 @@ export const mockUsersResponse: ApiResponse<User[]> = {
     pageCount: 1,
     limit: 10,
   },
-};
+}
