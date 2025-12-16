@@ -1,109 +1,126 @@
-// import axios, { AxiosError, AxiosRequestConfig } from "axios";
-// import { useUserStore } from "@/store/UserStore";
-// import { getNewToken } from "./authService";
+import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
+import { useUserStore } from '@/stores/user-store'
 
-// const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
+const isMockMode = process.env.NEXT_PUBLIC_MOCK_MODE === 'true'
 
-// const config: AxiosRequestConfig = {
-//   baseURL: BASE_URL,
-// };
+// Create axios instance
+export const api = axios.create({
+  baseURL: isMockMode ? '/mock-api' : BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
 
-// const baseAxios = axios.create(config);
+// Request interceptor - Add auth token
+api.interceptors.request.use(
+  async (config: InternalAxiosRequestConfig) => {
+    // Skip token for mock mode
+    if (isMockMode) {
+      return config
+    }
 
-// const getJwt = async () => {
-//   const jwt = useUserStore.getState().jwt;
-//   return jwt;
-// };
+    const token = useUserStore.getState().accessToken
 
-// baseAxios.interceptors.request.use(
-//   async (config) => {
-//     const jwt = await getJwt();
-//     if (jwt) {
-//       config.headers.set("Authorization", `Bearer ${jwt}`);
-//     }
-//     return config;
-//   },
-//   (error: AxiosError) => {
-//     return Promise.reject(error);
-//   }
-// );
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
 
-// let isRefreshing = false;
-// let failedQueue: {
-//   resolve: (token: string | null) => void;
-//   reject: (error: any) => void;
-// }[] = [];
+    return config
+  },
+  (error: AxiosError) => {
+    return Promise.reject(error)
+  }
+)
 
-// const processQueue = (error: any, token = null) => {
-//   failedQueue.forEach((prom) => {
-//     if (token) {
-//       prom.resolve(token);
-//     } else {
-//       prom.reject(error);
-//     }
-//   });
+// Response interceptor - Handle common errors
+api.interceptors.response.use(
+  (response: AxiosResponse) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
-//   failedQueue = [];
-// };
+    // Skip interceptor for mock mode
+    if (isMockMode) {
+      return Promise.reject(error)
+    }
 
-// baseAxios.interceptors.response.use(
-//   (response) => response, // Trả về response nếu thành công
-//   async (error) => {
-//     const originalRequest = error.config;
+    // Handle 401 Unauthorized - Token refresh logic
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true
 
-//     // Kiểm tra nếu lỗi 401 (Unauthorized)
-//     if (
-//       error.response &&
-//       error.response.status === 401 &&
-//       !originalRequest._retry
-//     ) {
-//       if (isRefreshing) {
-//         return new Promise(function (resolve, reject) {
-//           failedQueue.push({ resolve, reject });
-//         })
-//           .then((token) => {
-//             originalRequest.headers["Authorization"] = "Bearer " + token;
-//             return baseAxios(originalRequest);
-//           })
-//           .catch((err) => {
-//             return Promise.reject(err);
-//           });
-//       }
+      try {
+        // Attempt to refresh the token
+        const refreshToken = useUserStore.getState().refreshToken
 
-//       originalRequest._retry = true;
-//       isRefreshing = true;
+        if (!refreshToken) {
+          throw new Error('No refresh token available')
+        }
 
-//       return new Promise(async (resolve, reject) => {
-//         const [setRefreshToken, setJwt, refreshToken] = useUserStore(
-//           (state) => [state.setRefreshToken, state.setJwt, state.refreshToken]
-//         );
-//         try {
-//           const tokenRefresh = refreshToken; // Hoặc từ cookies
-//           if (!tokenRefresh) {
-//             throw new Error("Refresh token not available");
-//           }
+        // Call refresh token endpoint
+        const response = await axios.post(`${BASE_URL}/auth/refresh`, {
+          refreshToken,
+        })
 
-//           const newTokens = await getNewToken(tokenRefresh); // Gọi API để làm mới token
-//           const { jwt } = newTokens.data;
+        const { accessToken, refreshToken: newRefreshToken } = response.data.data
 
-//           setRefreshToken(tokenRefresh);
-//           baseAxios.defaults.headers["Authorization"] = "Bearer " + jwt;
-//           originalRequest.headers["Authorization"] = "Bearer " + jwt;
+        // Update tokens in store
+        useUserStore.getState().setTokens({
+          accessToken,
+          refreshToken: newRefreshToken || refreshToken,
+        })
 
-//           processQueue(null, jwt);
-//           resolve(baseAxios(originalRequest));
-//         } catch (err) {
-//           processQueue(err, null);
-//           setJwt(""); // Xóa token khỏi localStorage khi refresh token không hợp lệ
-//           reject(err);
-//         } finally {
-//           isRefreshing = false;
-//         }
-//       });
-//     }
+        // Retry the original request with new token
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`
+        }
 
-//     return Promise.reject(error);
-//   }
-// );
+        return api(originalRequest)
+      } catch (refreshError) {
+        // Refresh failed, logout user
+        useUserStore.getState().logout()
 
-// export default baseAxios;
+        // Redirect to login page (client-side only)
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login'
+        }
+
+        return Promise.reject(refreshError)
+      }
+    }
+
+    // Handle other HTTP errors
+    if (error.response?.status) {
+      const status = error.response.status
+      const message = (error.response.data as { message?: string })?.message || error.message
+
+      switch (status) {
+        case 400:
+          console.error('Bad Request:', message)
+          break
+        case 403:
+          console.error('Forbidden:', message)
+          break
+        case 404:
+          console.error('Not Found:', message)
+          break
+        case 429:
+          console.error('Too Many Requests:', message)
+          break
+        case 500:
+          console.error('Internal Server Error:', message)
+          break
+        default:
+          console.error(`HTTP Error ${status}:`, message)
+      }
+    } else if (error.code === 'NETWORK_ERROR') {
+      console.error('Network Error:', error.message)
+    } else if (error.code === 'ECONNABORTED') {
+      console.error('Request Timeout:', error.message)
+    }
+
+    return Promise.reject(error)
+  }
+)
+
+export default api
