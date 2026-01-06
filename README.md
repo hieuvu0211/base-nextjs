@@ -76,23 +76,27 @@ This template implements a modern, layered architecture for Next.js 15 applicati
 ## 🔧 Technology Stack
 
 ### Core Framework
+
 - **Next.js 15.4.6+** - React framework with App Router and Turbopack
 - **React 19.1.0+** - UI library with Server Components
 - **TypeScript 5+** - Static typing with strict mode
 
 ### Data & State Management
+
 - **TanStack Query v5** - Server state management and caching
 - **Zustand v5** - Lightweight client state management
 - **React Hook Form** - Form state management with validation
 - **Zod** - Schema validation and TypeScript inference
 
 ### Styling & UI
+
 - **Tailwind CSS v4** - Utility-first CSS framework
 - **Radix UI** - Headless UI components for accessibility
 - **Lucide React** - Icon library
 - **Framer Motion** - Animation library
 
 ### Development Tools
+
 - **ESLint 9** - Code linting with TypeScript support
 - **Prettier** - Code formatting
 - **Jest & Testing Library** - Unit testing
@@ -165,29 +169,34 @@ my-app/
 ## 🎯 Key Features
 
 ### 1. **Common Components**
+
 - **CommonButton**: Support for multiple variants (primary, secondary, outline, ghost), loading states, and sizes
 - **CommonInput**: Flexible input component with validation, error handling, and multiple types
 - **CommonTable**: Advanced table with sorting, pagination, row selection, and filtering
 - **CommonModal**: Accessible modal with multiple sizes and animations
 
 ### 2. **Data Fetching Patterns**
+
 - TanStack Query for server state management
 - Automatic caching and background refetching
 - Optimistic updates for better UX
 - Error and loading state handling
 
 ### 3. **Mock Data Support**
+
 - Toggle between real API and mock data
 - Realistic mock responses for development
 - Easy testing without backend dependency
 
 ### 4. **Type Safety**
+
 - Full TypeScript coverage
 - Strict mode enabled
 - Type inference from Zod schemas
 - API response type definitions
 
 ### 5. **Error Handling**
+
 - Global error boundaries
 - Comprehensive error messages
 - Toast notifications for user feedback
